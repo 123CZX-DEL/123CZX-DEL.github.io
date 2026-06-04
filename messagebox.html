@@ -607,6 +607,7 @@
             let GITHUB_TOKEN = localStorage.getItem(TOKEN_KEY);
             const syncIndicator = document.getElementById('syncIndicator');
             const syncText = document.getElementById('syncText');
+            let currentFileSha = null;
 
             function updateSyncStatus(hasToken) {
                 if (hasToken) {
@@ -631,7 +632,7 @@
                         {
                             headers: {
                                 'Authorization': `Bearer ${GITHUB_TOKEN}`,
-                                'Accept': 'application/vnd.github.v3.raw'
+                                'Accept': 'application/vnd.github.v3+json'
                             }
                         }
                     );
@@ -641,7 +642,12 @@
                         return getMessagesFromLocal();
                     }
 
-                    const data = await response.json();
+                    const fileData = await response.json();
+                    currentFileSha = fileData.sha;
+                    console.log('获取 SHA 成功:', currentFileSha);
+
+                    const content = atob(fileData.content);
+                    const data = JSON.parse(content);
                     console.log('从 GitHub 读取成功:', data);
                     return Array.isArray(data) ? data : [];
                 } catch (error) {
@@ -657,29 +663,36 @@
                 }
 
                 try {
-                    // 先获取当前文件信息（包括 sha）
-                    const getResponse = await fetch(
-                        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}?ref=${GITHUB_BRANCH}`,
-                        {
-                            headers: {
-                                'Authorization': `Bearer ${GITHUB_TOKEN}`,
-                                'Accept': 'application/vnd.github.v3+json'
+                    // 如果没有 SHA，先获取
+                    if (!currentFileSha) {
+                        const getResponse = await fetch(
+                            `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}?ref=${GITHUB_BRANCH}`,
+                            {
+                                headers: {
+                                    'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                                    'Accept': 'application/vnd.github.v3+json'
+                                }
                             }
-                        }
-                    );
+                        );
 
-                    if (!getResponse.ok) {
-                        console.error('获取文件失败:', getResponse.status);
-                        saveMessagesToLocal(messages);
-                        return false;
+                        if (!getResponse.ok) {
+                            console.error('获取文件失败:', getResponse.status);
+                            saveMessagesToLocal(messages);
+                            return false;
+                        }
+
+                        const fileData = await getResponse.json();
+                        currentFileSha = fileData.sha;
+                        console.log('重新获取 SHA:', currentFileSha);
                     }
 
-                    const fileData = await getResponse.json();
-                    const sha = fileData.sha;
-                    console.log('获取到 SHA:', sha);
+                    // 编码内容 - 正确处理 UTF-8 和中文
+                    const jsonString = JSON.stringify(messages, null, 2);
+                    const utf8Bytes = new TextEncoder().encode(jsonString);
+                    const binaryString = String.fromCharCode(...utf8Bytes);
+                    const content = btoa(binaryString);
 
-                    // 编码内容
-                    const content = btoa(unescape(encodeURIComponent(JSON.stringify(messages, null, 2))));
+                    console.log('准备更新，SHA:', currentFileSha);
 
                     // 更新文件
                     const updateResponse = await fetch(
@@ -694,7 +707,7 @@
                             body: JSON.stringify({
                                 message: `Update messages - ${new Date().toLocaleString('zh-CN')}`,
                                 content: content,
-                                sha: sha,
+                                sha: currentFileSha,
                                 branch: GITHUB_BRANCH
                             })
                         }
@@ -703,15 +716,20 @@
                     if (!updateResponse.ok) {
                         const errorData = await updateResponse.json();
                         console.error('更新失败:', errorData);
+                        // 重置 SHA，下次重新获取
+                        currentFileSha = null;
                         saveMessagesToLocal(messages);
                         return false;
                     }
 
-                    console.log('GitHub 更新成功');
+                    const result = await updateResponse.json();
+                    currentFileSha = result.content.sha;
+                    console.log('GitHub 更新成功，新 SHA:', currentFileSha);
                     saveMessagesToLocal(messages);
                     return true;
                 } catch (error) {
                     console.error('保存到 GitHub 失败:', error);
+                    currentFileSha = null;
                     saveMessagesToLocal(messages);
                     return false;
                 }
@@ -830,7 +848,7 @@
                     senderContactInput.value = '';
                     messageContentInput.value = '';
                     
-                    showSuccess('✅ 留言已投递到时光箱！感谢你的分享！');
+                    showSuccess('✅ 留言已投递到时光箱！感谢你���分享！');
                     
                     if (isAuthenticated) {
                         renderMessages();
@@ -921,6 +939,7 @@
             clearAllBtn.addEventListener('click', async function() {
                 if (confirm('⚠️ 确定要清空所有留言吗？此操作无法撤销！')) {
                     await saveMessages([]);
+                    currentFileSha = null;
                     await renderMessages();
                     passwordError.textContent = '✅ 所有留言已清空';
                     setTimeout(() => {
@@ -993,6 +1012,7 @@
                 const newToken = localStorage.getItem(TOKEN_KEY);
                 if (newToken !== GITHUB_TOKEN) {
                     GITHUB_TOKEN = newToken;
+                    currentFileSha = null;
                     updateSyncStatus(!!GITHUB_TOKEN);
                 }
             }, 5000);
