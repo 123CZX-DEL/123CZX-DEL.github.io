@@ -605,7 +605,6 @@
             const TOKEN_KEY = 'github_token';
             
             let GITHUB_TOKEN = localStorage.getItem(TOKEN_KEY);
-            let isSyncing = false;
             const syncIndicator = document.getElementById('syncIndicator');
             const syncText = document.getElementById('syncText');
 
@@ -632,18 +631,18 @@
                         {
                             headers: {
                                 'Authorization': `Bearer ${GITHUB_TOKEN}`,
-                                'Accept': 'application/vnd.github.v3.raw',
-                                'X-GitHub-Api-Version': '2022-11-28'
+                                'Accept': 'application/vnd.github.v3.raw'
                             }
                         }
                     );
 
                     if (!response.ok) {
-                        console.warn('GitHub 读取失败');
+                        console.warn('GitHub 读取失败:', response.status);
                         return getMessagesFromLocal();
                     }
 
                     const data = await response.json();
+                    console.log('从 GitHub 读取成功:', data);
                     return Array.isArray(data) ? data : [];
                 } catch (error) {
                     console.error('获取数据失败:', error);
@@ -658,29 +657,31 @@
                 }
 
                 try {
-                    isSyncing = true;
-
-                    // 第一步：获取当前文件信息
+                    // 先获取当前文件信息（包括 sha）
                     const getResponse = await fetch(
                         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}?ref=${GITHUB_BRANCH}`,
                         {
                             headers: {
                                 'Authorization': `Bearer ${GITHUB_TOKEN}`,
-                                'Accept': 'application/vnd.github.v3+json',
-                                'X-GitHub-Api-Version': '2022-11-28'
+                                'Accept': 'application/vnd.github.v3+json'
                             }
                         }
                     );
 
                     if (!getResponse.ok) {
-                        throw new Error(`获取文件失败: ${getResponse.status}`);
+                        console.error('获取文件失败:', getResponse.status);
+                        saveMessagesToLocal(messages);
+                        return false;
                     }
 
                     const fileData = await getResponse.json();
                     const sha = fileData.sha;
-                    const content = btoa(JSON.stringify(messages, null, 2));
+                    console.log('获取到 SHA:', sha);
 
-                    // 第二步：使用正确的方式更新文件
+                    // 编码内容
+                    const content = btoa(unescape(encodeURIComponent(JSON.stringify(messages, null, 2))));
+
+                    // 更新文件
                     const updateResponse = await fetch(
                         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`,
                         {
@@ -688,31 +689,31 @@
                             headers: {
                                 'Authorization': `Bearer ${GITHUB_TOKEN}`,
                                 'Content-Type': 'application/json',
-                                'Accept': 'application/vnd.github.v3+json',
-                                'X-GitHub-Api-Version': '2022-11-28'
+                                'Accept': 'application/vnd.github.v3+json'
                             },
                             body: JSON.stringify({
                                 message: `Update messages - ${new Date().toLocaleString('zh-CN')}`,
                                 content: content,
-                                sha: sha
+                                sha: sha,
+                                branch: GITHUB_BRANCH
                             })
                         }
                     );
 
                     if (!updateResponse.ok) {
                         const errorData = await updateResponse.json();
-                        console.error('更新失败详情:', errorData);
-                        throw new Error(`提交失败: ${updateResponse.status}`);
+                        console.error('更新失败:', errorData);
+                        saveMessagesToLocal(messages);
+                        return false;
                     }
 
+                    console.log('GitHub 更新成功');
                     saveMessagesToLocal(messages);
                     return true;
                 } catch (error) {
                     console.error('保存到 GitHub 失败:', error);
                     saveMessagesToLocal(messages);
                     return false;
-                } finally {
-                    isSyncing = false;
                 }
             }
 
