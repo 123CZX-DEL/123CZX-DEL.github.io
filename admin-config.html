@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员配置 · 时光留言箱</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f9f3e8 0%, #fde9e0 100%);
+            font-family: 'Quicksand', 'Noto Serif SC', serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: -10%;
+            left: -5%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255,215,179,0.5) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            z-index: 0;
+        }
+
+        body::after {
+            content: "";
+            position: absolute;
+            bottom: -8%;
+            right: -3%;
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, rgba(200,180,220,0.4) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            z-index: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(255, 250, 245, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12);
+            padding: 2.5rem;
+            position: relative;
+            z-index: 2;
+            border: 1px solid rgba(255, 245, 235, 0.8);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 2rem;
+            color: #5e4632;
+            margin-bottom: 0.5rem;
+            letter-spacing: 1px;
+        }
+
+        .header p {
+            color: #aa8c7a;
+            font-size: 0.95rem;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-weight: 700;
+            color: #5e4632;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .section-title i {
+            color: #d9b382;
+            font-size: 1.3rem;
+        }
+
+        .status-box {
+            background: rgba(74, 139, 94, 0.08);
+            border: 2px solid #4a8b5e;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .status-box.unconfigured {
+            background: rgba(177, 94, 74, 0.08);
+            border-color: #b15e4a;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4a8b5e;
+            animation: pulse 2s infinite;
+        }
+
+        .status-box.unconfigured .status-indicator {
+            background: #b15e4a;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            flex: 1;
+        }
+
+        .status-text strong {
+            display: block;
+            color: #4a8b5e;
+            margin-bottom: 0.2rem;
+        }
+
+        .status-box.unconfigured .status-text strong {
+            color: #b15e4a;
+        }
+
+        .status-text small {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #5e4a37;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        input[type="password"],
+        input[type="text"] {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            border: 2px solid #e7cfb9;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-family: 'Quicksand', sans-serif;
+            background: #fffcf5;
+            color: #3b332b;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input[type="password"]:focus,
+        input[type="text"]:focus {
+            border-color: #c99c7b;
+            box-shadow: 0 0 0 4px rgba(217, 155, 122, 0.2);
+            background: #ffffff;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 120px;
+            padding: 0.9rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #b58b5a, #9c7a5c);
+            color: white;
+            box-shadow: 0 8px 16px rgba(140, 100, 60, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #c79a6e, #b0835a);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(160, 110, 60, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(217, 179, 130, 0.2);
+            color: #6b5a47;
+            border: 2px solid #d9b382;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(217, 179, 130, 0.3);
+        }
+
+        .btn-danger {
+            background: rgba(255, 107, 107, 0.2);
+            color: #b15e4a;
+            border: 2px solid rgba(255, 107, 107, 0.5);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 107, 107, 0.35);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 16px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+        }
+
+        .message.success {
+            background: rgba(74, 139, 94, 0.1);
+            border-left: 4px solid #4a8b5e;
+            color: #4a8b5e;
+        }
+
+        .message.error {
+            background: rgba(177, 94, 74, 0.1);
+            border-left: 4px solid #b15e4a;
+            color: #b15e4a;
+        }
+
+        .message i {
+            margin-top: 0.2rem;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .instruction {
+            background: rgba(217, 155, 122, 0.05);
+            border: 1px solid #d9b382;
+            border-radius: 16px;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            color: #5e4632;
+            line-height: 1.6;
+        }
+
+        .instruction strong {
+            color: #7b5e47;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .instruction ol {
+            margin-left: 1.5rem;
+        }
+
+        .instruction li {
+            margin-bottom: 0.5rem;
+        }
+
+        .instruction code {
+            background: rgba(0, 0, 0, 0.08);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        .nav-back {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px dashed #dbb594;
+        }
+
+        .nav-back a {
+            color: #d9b382;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: color 0.3s;
+        }
+
+        .nav-back a:hover {
+            color: #c99c7b;
+        }
+
+        .token-info {
+            background: rgba(217, 155, 122, 0.08);
+            border-left: 4px solid #d9b382;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #5e4632;
+            line-height: 1.5;
+        }
+
+        .password-toggle {
+            position: relative;
+        }
+
+        .password-toggle button {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #aa8c7a;
+            cursor: pointer;
+            padding: 0.5rem;
+            font-size: 1.2rem;
+            width: auto;
+            margin: 0;
+            flex: none;
+        }
+
+        .password-toggle input {
+            padding-right: 45px;
+        }
+
+        @media (max-width: 550px) {
+            .container {
+                padding: 1.8rem 1.2rem;
+            }
+
+            .header h1 {
+                font-size: 1.6rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ 管理员配置</h1>
+            <p>配置 GitHub Token 启用云端同步</p>
+        </div>
+
+        <div id="statusBox" class="status-box unconfigured">
+            <div class="status-indicator"></div>
+            <div class="status-text">
+                <strong id="statusTitle">未配置</strong>
+                <small id="statusDesc">点击下方配置 Token 启用云端同步功能</small>
+            </div>
+        </div>
+
+        <div id="messageBox"></div>
+
+        <!-- 未配置状态 -->
+        <div id="unconfiguredSection">
+            <div class="section">
+                <div class="section-title">
+                    <i class="fas fa-key"></i> 生成 GitHub Token
+                </div>
+                <div class="instruction">
+                    <strong>快速步骤：</strong>
+                    <ol>
+                        <li>访问 <code>https://github.com/settings/tokens</code></li>
+                        <li>点击 "Generate new token (classic)"</li>
+                        <li>名称填 "Message Box Token"</li>
+                        <li>Expiration 选 "No expiration"</li>
+                        <li>✅ 勾选 <code>repo</code> 权限</li>
+                        <li>点 "Generate token"</li>
+                        <li>复制生成的 token</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">
+                    <i class="fas fa-paste"></i> 粘贴 Token
+                </div>
+                <div class="form-group">
+                    <label for="tokenInput">GitHub Personal Access Token</label>
+                    <div class="password-toggle">
+                        <input type="password" id="tokenInput" placeholder="ghp_开头的 token" autocomplete="off">
+                        <button type="button" id="togglePassword" title="显示/隐藏">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="token-info">
+                        <i class="fas fa-shield-alt"></i> 你的 Token 只会保存在你的浏览器本地，不会上传到服务器。
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" id="saveBtn" class="btn-primary">
+                    <i class="fas fa-save"></i> 保存配置
+                </button>
+                <button type="button" id="testBtn" class="btn-secondary">
+                    <i class="fas fa-flask"></i> 测试连接
+                </button>
+            </div>
+        </div>
+
+        <!-- 已配置状态 -->
+        <div id="configuredSection" class="hidden">
+            <div class="section">
+                <div class="section-title">
+                    <i class="fas fa-check-circle"></i> 配置成功 ✓
+                </div>
+                <div class="message success">
+                    <i class="fas fa-check"></i>
+                    <div>
+                        <strong>Token 已保存</strong><br>
+                        云端同步功能已启用。现在去投递留言吧！
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">
+                    <i class="fas fa-info-circle"></i> 已配置的信息
+                </div>
+                <div class="token-info">
+                    <strong id="tokenDisplay"></strong><br>
+                    <small>Token 保存位置：浏览器 localStorage</small><br>
+                    <small>有效期：永久（除非 GitHub 上主动撤销）</small>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" id="updateBtn" class="btn-secondary">
+                    <i class="fas fa-edit"></i> 更新 Token
+                </button>
+                <button type="button" id="clearBtn" class="btn-danger">
+                    <i class="fas fa-trash"></i> 删除配置
+                </button>
+                <button type="button" id="backBtn" class="btn-primary">
+                    <i class="fas fa-arrow-left"></i> 返回留言箱
+                </button>
+            </div>
+        </div>
+
+        <div class="nav-back">
+            <a href="messagebox.html">
+                <i class="fas fa-arrow-left"></i> 返回留言箱
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const tokenInput = document.getElementById('tokenInput');
+        const togglePassword = document.getElementById('togglePassword');
+        const saveBtn = document.getElementById('saveBtn');
+        const testBtn = document.getElementById('testBtn');
+        const updateBtn = document.getElementById('updateBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const backBtn = document.getElementById('backBtn');
+        const messageBox = document.getElementById('messageBox');
+        const unconfiguredSection = document.getElementById('unconfiguredSection');
+        const configuredSection = document.getElementById('configuredSection');
+        const statusBox = document.getElementById('statusBox');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusDesc = document.getElementById('statusDesc');
+        const tokenDisplay = document.getElementById('tokenDisplay');
+
+        const STORAGE_KEY = 'github_token';
+
+        // 显示/隐藏密码
+        togglePassword.addEventListener('click', function() {
+            const type = tokenInput.type === 'password' ? 'text' : 'password';
+            tokenInput.type = type;
+            togglePassword.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+        });
+
+        // 显示消息
+        function showMessage(text, type = 'success') {
+            messageBox.innerHTML = `
+                <div class="message ${type}">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                    <div>${text}</div>
+                </div>
+            `;
+            setTimeout(() => {
+                messageBox.innerHTML = '';
+            }, 4000);
+        }
+
+        // 初始化状态
+        function initializeStatus() {
+            const savedToken = localStorage.getItem(STORAGE_KEY);
+            if (savedToken) {
+                showConfigured(savedToken);
+            } else {
+                showUnconfigured();
+            }
+        }
+
+        // 显示未配置状态
+        function showUnconfigured() {
+            unconfiguredSection.classList.remove('hidden');
+            configuredSection.classList.add('hidden');
+            statusBox.classList.add('unconfigured');
+            statusTitle.textContent = '未配置';
+            statusDesc.textContent = '点击下方配置 Token 启用云端同步功能';
+        }
+
+        // 显示已配置状态
+        function showConfigured(token) {
+            unconfiguredSection.classList.add('hidden');
+            configuredSection.classList.remove('hidden');
+            statusBox.classList.remove('unconfigured');
+            statusTitle.textContent = '已配置 ✓';
+            statusTitle.style.color = '#4a8b5e';
+            statusDesc.textContent = '云端同步功能已启用';
+            
+            const displayToken = token.substring(0, 10) + '...' + token.substring(token.length - 4);
+            tokenDisplay.textContent = `Token: ${displayToken}`;
+        }
+
+        // 保存配置
+        saveBtn.addEventListener('click', async function() {
+            const token = tokenInput.value.trim();
+            
+            if (!token) {
+                showMessage('请输入 Token', 'error');
+                return;
+            }
+
+            if (!token.startsWith('ghp_')) {
+                showMessage('Token 格式不正确，应以 ghp_ 开头', 'error');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 验证中...';
+
+            try {
+                // 验证 token 是否有效
+                const response = await fetch('https://api.github.com/user', {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Token 验证失败');
+                }
+
+                const user = await response.json();
+                
+                // 保存到本地存储
+                localStorage.setItem(STORAGE_KEY, token);
+                
+                showMessage(`✅ 配置成功！账户: ${user.login}`, 'success');
+                showConfigured(token);
+                tokenInput.value = '';
+            } catch (error) {
+                showMessage('❌ Token 无效或网络错误。请检查 Token 是否正确。', 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> 保存配置';
+            }
+        });
+
+        // 测试连接
+        testBtn.addEventListener('click', async function() {
+            const token = tokenInput.value.trim();
+            
+            if (!token) {
+                showMessage('请先输入 Token', 'error');
+                return;
+            }
+
+            testBtn.disabled = true;
+            testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 测试中...';
+
+            try {
+                const response = await fetch('https://api.github.com/user', {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    showMessage(`✅ 连接成功！账户: ${user.login}`, 'success');
+                } else {
+                    showMessage('❌ 连接失败，Token 可能无效', 'error');
+                }
+            } catch (error) {
+                showMessage('❌ 网络错误或 Token 无效', 'error');
+            } finally {
+                testBtn.disabled = false;
+                testBtn.innerHTML = '<i class="fas fa-flask"></i> 测试连接';
+            }
+        });
+
+        // 更新 Token
+        updateBtn.addEventListener('click', function() {
+            tokenInput.value = '';
+            showUnconfigured();
+            tokenInput.focus();
+        });
+
+        // 删除配置
+        clearBtn.addEventListener('click', function() {
+            if (confirm('确定要删除已保存的 Token 吗？删除后将回退到本地存储模式。')) {
+                localStorage.removeItem(STORAGE_KEY);
+                tokenInput.value = '';
+                showMessage('✅ 配置已删除', 'success');
+                showUnconfigured();
+            }
+        });
+
+        // 返回留言箱
+        backBtn.addEventListener('click', function() {
+            window.location.href = 'messagebox.html';
+        });
+
+        // 初始化
+        initializeStatus();
+    </script>
+</body>
+</html>
