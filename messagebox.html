@@ -116,6 +116,7 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
         .sync-indicator {
@@ -139,7 +140,6 @@
 
         .config-link {
             display: inline-block;
-            margin-left: 0.5rem;
             padding: 0.3rem 0.8rem;
             background: rgba(217, 155, 122, 0.2);
             border-radius: 12px;
@@ -483,10 +483,6 @@
             .message-list {
                 max-height: 400px;
             }
-            .config-link {
-                display: block;
-                margin: 0.5rem 0 0 0;
-            }
         }
 
         .message-list::-webkit-scrollbar {
@@ -521,7 +517,7 @@
         <div class="sync-status">
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncText">云端同步已连接</span>
-            <a href="admin-config.html" class="config-link" id="configLink">⚙️ 配置</a>
+            <a href="admin-config.html" class="config-link">⚙️ 配置</a>
         </div>
 
         <div class="toggle-bar">
@@ -612,16 +608,12 @@
             let isSyncing = false;
             const syncIndicator = document.getElementById('syncIndicator');
             const syncText = document.getElementById('syncText');
-            const configLink = document.getElementById('configLink');
 
-            function updateSyncStatus(hasToken, synced) {
-                if (hasToken && synced) {
+            function updateSyncStatus(hasToken) {
+                if (hasToken) {
                     syncIndicator.classList.remove('offline');
                     syncIndicator.style.background = '#4a8b5e';
                     syncText.textContent = '✓ 云端同步已连接';
-                } else if (hasToken && !synced) {
-                    syncIndicator.style.background = '#f0ad4e';
-                    syncText.textContent = '⟳ 同步中...';
                 } else {
                     syncIndicator.classList.add('offline');
                     syncIndicator.style.background = '#b15e4a';
@@ -647,7 +639,7 @@
                     );
 
                     if (!response.ok) {
-                        console.warn('GitHub 读取失败，使用本地缓存');
+                        console.warn('GitHub 读取失败');
                         return getMessagesFromLocal();
                     }
 
@@ -667,8 +659,8 @@
 
                 try {
                     isSyncing = true;
-                    updateSyncStatus(true, false);
 
+                    // 第一步：获取当前文件信息
                     const getResponse = await fetch(
                         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}?ref=${GITHUB_BRANCH}`,
                         {
@@ -680,14 +672,15 @@
                         }
                     );
 
-                    let sha = null;
-                    if (getResponse.ok) {
-                        const fileData = await getResponse.json();
-                        sha = fileData.sha;
+                    if (!getResponse.ok) {
+                        throw new Error(`获取文件失败: ${getResponse.status}`);
                     }
 
+                    const fileData = await getResponse.json();
+                    const sha = fileData.sha;
                     const content = btoa(JSON.stringify(messages, null, 2));
 
+                    // 第二步：使用正确的方式更新文件
                     const updateResponse = await fetch(
                         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`,
                         {
@@ -701,23 +694,21 @@
                             body: JSON.stringify({
                                 message: `Update messages - ${new Date().toLocaleString('zh-CN')}`,
                                 content: content,
-                                sha: sha,
-                                branch: GITHUB_BRANCH
+                                sha: sha
                             })
                         }
                     );
 
                     if (!updateResponse.ok) {
-                        console.warn('GitHub 写入失败，已保存本地缓存');
-                        saveMessagesToLocal(messages);
-                        return false;
+                        const errorData = await updateResponse.json();
+                        console.error('更新失败详情:', errorData);
+                        throw new Error(`提交失败: ${updateResponse.status}`);
                     }
 
                     saveMessagesToLocal(messages);
-                    updateSyncStatus(true, true);
                     return true;
                 } catch (error) {
-                    console.error('保存失败:', error);
+                    console.error('保存到 GitHub 失败:', error);
                     saveMessagesToLocal(messages);
                     return false;
                 } finally {
@@ -845,6 +836,7 @@
                     }
                 } catch (error) {
                     showError('投递失败，请稍后重试');
+                    console.error(error);
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 投递到时光箱';
@@ -993,14 +985,14 @@
 
             // 初始化
             setActiveCard('write');
-            updateSyncStatus(!!GITHUB_TOKEN, false);
+            updateSyncStatus(!!GITHUB_TOKEN);
 
             // 每隔5秒检查是否有新 token
             setInterval(() => {
                 const newToken = localStorage.getItem(TOKEN_KEY);
                 if (newToken !== GITHUB_TOKEN) {
                     GITHUB_TOKEN = newToken;
-                    updateSyncStatus(!!GITHUB_TOKEN, false);
+                    updateSyncStatus(!!GITHUB_TOKEN);
                 }
             }, 5000);
         })();
